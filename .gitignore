@@ -1,0 +1,25 @@
+# ─── MAVEN BUILD OUTPUTS ─────────────────────────────────────────────
+# Never commit compiled code, temporary build folders, or binaries.
+target/
+*.war
+*.ear
+*.jar
+
+# ─── SENSITIVE CONFIGURATIONS ────────────────────────────────────────
+# Protect your database passwords and email app-specific credentials!
+src/main/resources/db.properties
+
+# ─── IDE AND EDITOR METADATA ─────────────────────────────────────────
+# Exclude local editor settings so they don't conflict with other environments.
+.vscode/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+bin/
+
+# ─── OPERATING SYSTEM FILES ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

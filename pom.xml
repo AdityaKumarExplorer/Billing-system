@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ── Project Identity ─────────────────────────────────────────── -->
+    <groupId>com.billdesk</groupId>
+    <artifactId>billing-system</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+    <!-- packaging=war tells Maven to build a .war file (Web ARchive)
+         that Tomcat can deploy, instead of a plain .jar -->
+
+    <name>BillDesk POS System</name>
+
+    <!-- ── Compiler Properties ──────────────────────────────────────── -->
+        <properties>
+            <maven.compiler.source>21</maven.compiler.source>
+            <maven.compiler.target>21</maven.compiler.target>
+            <maven.compiler.release>21</maven.compiler.release> 
+            <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        </properties>
+    <!-- ══════════════════════════════════════════════════════════════
+         DEPENDENCIES
+         LEARNING NOTE:
+         Maven downloads these JARs from Maven Central automatically.
+         You never manually download or copy JAR files.
+         Run:  mvn dependency:resolve  to download them.
+    ══════════════════════════════════════════════════════════════════ -->
+    <dependencies>
+
+        <!-- ── 1. Jakarta Servlet API ───────────────────────────────── -->
+        <!-- Required for HttpServlet, HttpServletRequest, etc.
+             'provided' scope = Tomcat already has this JAR at runtime;
+             don't bundle it in the .war file. -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ── 2. MySQL Connector/J ─────────────────────────────────── -->
+        <!-- The JDBC driver that lets Java talk to MySQL.
+             LEARNING NOTE: This JAR contains the com.mysql.cj.jdbc.Driver
+             class that DBConnection.java registers. Without it, you get
+             "No suitable driver found" SQLException. -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>8.3.0</version>
+        </dependency>
+
+        <!-- ── 3. Apache Commons DBCP2 (Connection Pool) ────────────── -->
+        <!-- The BasicDataSource class used in DBConnection.java.
+             DBCP = Database Connection Pooling.
+             LEARNING NOTE: This dependency pulls in
+             commons-pool2 automatically (a transitive dependency). -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+
+        <!-- ── 4. Google Gson ───────────────────────────────────────── -->
+        <!-- Converts Java objects ↔ JSON.
+             Used in CheckoutServlet.java to parse the incoming
+             JSON payload from the browser.
+             LEARNING NOTE: Gson is simpler than Jackson for teaching.
+             It has zero configuration for basic use. -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+        <!-- ── 5. iText 5 (PDF Generation) ─────────────────────────── -->
+        <!-- Used in CheckoutServlet.java to generate the thermal receipt PDF.
+             LEARNING NOTE: iText 5 is LGPL licensed, meaning you can use
+             it freely in non-commercial projects. For commercial use,
+             use iText 7 with a commercial license or switch to Apache PDFBox.
+
+             SKEPTIC'S NOTE: iText 5 is old (last updated ~2016) but
+             still widely taught and used. It works fine for this purpose.
+             iText 7 has a completely different API that would make the
+             tutorial harder to follow. We keep 5 here intentionally. -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itextpdf</artifactId>
+            <version>5.5.13.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.mail</groupId>
+            <artifactId>jakarta.mail-api</artifactId>
+            <version>2.1.3</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>jakarta.mail</artifactId>
+            <version>2.0.3</version>
+            <scope>runtime</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- ── Build Configuration ──────────────────────────────────────── -->
+    <build>
+        <finalName>billing-system</finalName>
+        <!-- The .war file will be named billing-system.war
+             Deploy it to: $TOMCAT_HOME/webapps/billing-system.war
+             Then access at: http://localhost:8080/billing-system/ -->
+
+        <plugins>
+            <!-- Maven WAR Plugin: packages everything into the .war file -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+                <configuration>
+                    <!-- Where to find the web frontend files -->
+                    <warSourceDirectory>src/main/webapp</warSourceDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

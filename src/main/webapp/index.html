@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__logo">▣</span>
+      <span class="topbar__name">Billing System</span>
+    </div>
+    <div class="topbar__meta">
+      <span id="js-clock" class="topbar__clock">--:--:--</span>
+      <span class="topbar__sep">|</span>
+      <span class="topbar__cashier">Cashier: <strong>POS-01</strong></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel panel--cart">
+      <div class="scanner-bar">
+        <label for="uid-input" class="scanner-bar__label">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="4" height="18" rx="1"/>
+            <rect x="8" y="3" width="2" height="18" rx="1"/>
+            <rect x="13" y="3" width="3" height="18" rx="1"/>
+            <rect x="19" y="3" width="3" height="18" rx="1"/>
+          </svg>
+        </label>
+        <input
+          id="uid-input"
+          type="text"
+          class="scanner-bar__input"
+          placeholder="Scan or type product UID and press Enter…"
+          autocomplete="off"
+          autofocus
+        />
+        <span id="js-scan-status" class="scanner-bar__status"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="cart-table" id="js-cart-table">
+          <thead>
+            <tr>
+              <th class="col-uid">UID</th>
+              <th class="col-name">Product</th>
+              <th class="col-price">Base Price</th>
+              <th class="col-qty">Qty</th>
+              <th class="col-tax">Tax %</th>
+              <th class="col-disc">Disc %</th>
+              <th class="col-total">Total</th>
+              <th class="col-del"></th>
+            </tr>
+          </thead>
+          <tbody id="js-cart-body"></tbody>
+        </table>
+
+        <div class="empty-state" id="js-empty-state">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="8" y="16" width="48" height="40" rx="3"/>
+            <path d="M22 16v-4a10 10 0 0120 0v4"/>
+            <circle cx="32" cy="36" r="5"/>
+            <line x1="32" y1="41" x2="32" y2="47"/>
+          </svg>
+          <p>Cart is empty<br/>Scan a product UID to begin.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel panel--summary">
+      <div class="customer-box">
+        <h3 class="customer-box__heading">Customer Details</h3>
+        <div class="customer-box__field">
+          <input type="text" id="js-customer-name" class="customer-box__input" placeholder="Customer Name" required />
+        </div>
+        <div class="customer-box__field">
+          <input type="email" id="js-customer-email" class="customer-box__input" placeholder="Customer Email" required />
+        </div>
+      </div>
+
+      <h2 class="summary__heading">Session Summary</h2>
+
+      <dl class="summary__list">
+        <dt>Subtotal</dt>
+        <dd id="js-subtotal">₹ 0.00</dd>
+
+        <dt>Tax</dt>
+        <dd id="js-tax" class="summary__tax">+ ₹ 0.00</dd>
+
+        <dt>Discounts</dt>
+        <dd id="js-discount" class="summary__disc">− ₹ 0.00</dd>
+
+        <div class="summary__divider"></div>
+
+        <dt class="summary__grand-label">Grand Total</dt>
+        <dd id="js-grand" class="summary__grand-value">₹ 0.00</dd>
+      </dl>
+
+      <div class="summary__item-count">
+        <span id="js-item-count">0</span> line item(s) &nbsp;·&nbsp;
+        <span id="js-unit-count">0</span> unit(s)
+      </div>
+
+      <div class="actions">
+        <button id="js-clear-btn" class="btn btn--ghost" title="Clear entire cart"> Clear Cart </button>
+        <button id="js-checkout-btn" class="btn btn--primary" disabled> Complete Checkout </button>
+        <button id="js-print-receipt-btn" class="btn btn--ghost" disabled> Print Receipt </button>
+      </div>
+
+      <div id="js-checkout-msg" class="checkout-msg" hidden></div>
+    </aside>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
