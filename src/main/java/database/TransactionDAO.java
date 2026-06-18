@@ -42,9 +42,10 @@ public class TransactionDAO {
     private static final Logger LOGGER = Logger.getLogger(TransactionDAO.class.getName());
 
     // ─── SQL: Insert master transaction row ──────────────────────────
+    // Modified to fully support updated schema tracking properties
     private static final String SQL_INSERT_TRANSACTION =
-        "INSERT INTO transactions (date_time, subtotal, discount_amount, tax_amount, grand_total) " +
-        "VALUES (?, ?, ?, ?, ?)";
+        "INSERT INTO transactions (date_time, customer_name, customer_email, subtotal, discount_amount, tax_amount, grand_total) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     // ─── SQL: Insert one line item ────────────────────────────────────
     private static final String SQL_INSERT_ITEM =
@@ -58,17 +59,17 @@ public class TransactionDAO {
      * Persist a complete checkout to the database.
      *
      * This method is the heart of the billing system. It:
-     *   1. Turns off autocommit → begins a manual transaction
-     *   2. Inserts the transaction header row
-     *   3. Captures the AUTO_INCREMENT id MySQL generated
-     *   4. Uses that id to insert each line item
-     *   5. COMMITs if everything succeeded
-     *   6. ROLLBACKs if ANYTHING failed
+     * 1. Turns off autocommit → begins a manual transaction
+     * 2. Inserts the transaction header row
+     * 3. Captures the AUTO_INCREMENT id MySQL generated
+     * 4. Uses that id to insert each line item
+     * 5. COMMITs if everything succeeded
+     * 6. ROLLBACKs if ANYTHING failed
      *
      * @param transactionData  Map with keys: subtotal, discount, taxAmount, grandTotal
      * @param items            List of Maps, each with keys:
-     *                         productUid, productName, basePrice, quantity,
-     *                         taxRate, discountPct, calculatedTax, finalItemPrice
+     * productUid, productName, basePrice, quantity,
+     * taxRate, discountPct, calculatedTax, finalItemPrice
      * @return true if saved successfully, false otherwise
      */
     public boolean saveTransaction(
@@ -168,10 +169,12 @@ public class TransactionDAO {
                 SQL_INSERT_TRANSACTION, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
-            ps.setDouble(2, toDouble(data.get("subtotal")));
-            ps.setDouble(3, toDouble(data.get("discount")));
-            ps.setDouble(4, toDouble(data.get("taxAmount")));
-            ps.setDouble(5, toDouble(data.get("grandTotal")));
+            ps.setString(2, (String) data.get("customerName"));
+            ps.setString(3, (String) data.get("customerEmail"));
+            ps.setDouble(4, toDouble(data.get("subtotal")));
+            ps.setDouble(5, toDouble(data.get("discount")));
+            ps.setDouble(6, toDouble(data.get("taxAmount")));
+            ps.setDouble(7, toDouble(data.get("grandTotal")));
 
             int affectedRows = ps.executeUpdate();
             if (affectedRows == 0) {
