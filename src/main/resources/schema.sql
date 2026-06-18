@@ -92,21 +92,6 @@ CREATE INDEX idx_transactions_date
 CREATE INDEX idx_items_product
     ON transaction_items(product_uid);
 
--- ─── 6. SAMPLE DATA ─────────────────────────────────────────────────
---  These match the MOCK_PRODUCTS in script.js exactly.
--- ────────────────────────────────────────────────────────────────────
-INSERT INTO products (uid, name, base_price, tax_rate) VALUES
-    ('P001', 'Basmati Rice 5kg',    450.00,  5.00),
-    ('P002', 'Sunflower Oil 1L',    180.00, 12.00),
-    ('P003', 'Atta Flour 10kg',     380.00,  5.00),
-    ('P004', 'Toor Dal 1kg',        140.00,  5.00),
-    ('P005', 'Coffee Powder 200g',  220.00, 18.00),
-    ('P006', 'Green Tea 25 bags',    95.00, 12.00)
-ON DUPLICATE KEY UPDATE
-    name       = VALUES(name),
-    base_price = VALUES(base_price),
-    tax_rate   = VALUES(tax_rate);
-
--- ─── 7. VERIFY ──────────────────────────────────────────────────────
+-- ─── 6. VERIFY ──────────────────────────────────────────────────────
 SELECT 'Schema created successfully.' AS status;
 SELECT uid, name, base_price, tax_rate FROM products ORDER BY uid;
