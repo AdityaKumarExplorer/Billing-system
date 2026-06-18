@@ -1,31 +1,26 @@
-markdown
+# 🖥️ Backend Module Architecture (Tomcat 11 / Servlet 6.1)
+
+This module manages the business logic, transaction workflows, dynamic iText PDF generation, and connection pool lifetimes. By utilizing the **Jakarta Servlet 6.1** specification running on **Tomcat 11**, the backend avoids heavy frameworks to maximize throughput and maintain clear visibility over the HTTP request/response lifecycle.
 
 ---
 
-# Backend Module
+## 🏗️ Files & Directory Overview
 
-Files:
+- `src/main/java/backend/ProductServlet.java` — Catalogs product barcodes/UID scans.
+- `src/main/java/backend/CheckoutServlet.java` — Coordinates atomic saves and returns the generated PDF stream.
+- `src/main/java/backend/AppLifecycleListener.java` — Context listener running resource tear-downs.
+- `src/main/webapp/WEB-INF/web.xml` — Deployment descriptor configuration sheet.
 
-* `src/main/java/backend/ProductServlet.java`
-* `src/main/java/backend/CheckoutServlet.java`
-* `src/main/java/backend/AppLifecycleListener.java`
-* `src/main/webapp/WEB-INF/web.xml`
+---
 
-The backend is a plain Jakarta Servlet application. It runs as a WAR on Tomcat 11.
+## ⚙️ Runtime Alignment & Dependency Setup
 
-## Runtime Alignment
+The project targets modern enterprise execution platforms:
+- **Java:** Version 21 (compiled with `--release 21`).
+- **Tomcat:** Version 11.x series.
+- **Jakarta Specification:** Servlet API 6.1.
 
-The project targets:
-
-```text
-Java 21
-Tomcat 11.x
-Jakarta Servlet 6.1
-
-```
-
-`pom.xml` declares:
-
+### `pom.xml` Dependencies
 ```xml
 <dependency>
     <groupId>jakarta.servlet</groupId>
@@ -36,13 +31,13 @@ Jakarta Servlet 6.1
 
 ```
 
-The `provided` scope is important. Tomcat supplies the servlet classes at runtime, so they should not be bundled into the WAR.
+*Note on Scope:* The `provided` scope is mandatory. Tomcat supplies the core servlet classes at runtime, meaning they should never be bundled directly into the packaged WAR output.
 
-## `jakarta` vs `javax`
+### ⚠️ Namespace Migration: `jakarta` vs `javax`
 
-Tomcat 11 uses the `jakarta.servlet.*` namespace. The old `javax.servlet.*` namespace belongs to pre-Jakarta servlet stacks such as Tomcat 9 and older.
+Tomcat 11 relies fully on the modern `jakarta.servlet.*` namespace. The legacy `javax.servlet.*` namespace is native to pre-Jakarta servlet stacks (such as Tomcat 9 and older) and is completely unsupported here.
 
-This project must use imports like:
+All controllers must utilize the updated imports:
 
 ```java
 import jakarta.servlet.annotation.WebServlet;
@@ -52,61 +47,50 @@ import jakarta.servlet.http.HttpServletResponse;
 
 ```
 
-If a servlet imports `javax.servlet.*`, it may compile in some environments if an old API jar is present, but it will fail on Tomcat 11 at runtime.
+---
 
-## `web.xml`
+## 📝 Deployment Descriptor Configuration (`web.xml`)
 
-The descriptor is aligned with Servlet 6.1:
+The web deployment descriptor is explicitly aligned with the Servlet 6.1 validation schema:
 
 ```xml
-<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
-                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+<web-app xmlns="[https://jakarta.ee/xml/ns/jakartaee](https://jakarta.ee/xml/ns/jakartaee)"
+         xmlns:xsi="[http://www.w3.org/2001/XMLSchema-instance](http://www.w3.org/2001/XMLSchema-instance)"
+         xsi:schemaLocation="[https://jakarta.ee/xml/ns/jakartaee](https://jakarta.ee/xml/ns/jakartaee)
+                             [https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd](https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd)"
          version="6.1">
 
 ```
 
-The file configures:
+### Configuration Highlights:
 
-* `index.html` as the welcome file.
-* 30 minute session timeout.
-* Fallback error pages for 404 and 500 responses.
+* **Welcome File:** Registers `index.html` as the default application root dashboard landing page.
+* **Session Management:** Enforces a 30-minute absolute session timeout limit.
+* **Error Mapping:** Provides structural fallback error page routings for `404 (Not Found)` and `500 (Internal Server Error)` states.
 
-In alignment with production code maintenance, all conversational learning notes and text charts within `web.xml` have been stripped out, leaving only clean, functional configurations. Servlet URL mappings continue to be handled via annotations directly in the Java classes rather than inside `web.xml`.
+*Operational Note:* In alignment with code maintenance standards, all informational notes and text charts have been stripped from `web.xml`. All servlet route endpoints are declared cleanly using `@WebServlet` annotations inside the respective Java source files rather than here.
 
-## ProductServlet
+---
 
-Mapping:
+## 🔍 Servlet Implementations
 
-```java
-@WebServlet(name = "ProductServlet", urlPatterns = "/get-product")
+### 1. `ProductServlet` (Catalog Scans)
 
-```
+* **Endpoint Mapping:** `@WebServlet(name = "ProductServlet", urlPatterns = "/get-product")`
+* **Target Request:** `GET /billing-system/get-product?uid=P001`
 
-Request:
+#### Execution Architecture:
 
-```text
-GET /billing-system/get-product?uid=P001
-
-```
-
-### Code Flow & Cleanup
-
-All diagnostics, ASCII flow charts, and local mock-data fallback routines have been completely removed. The servlet executes lookup operations strictly and directly against the production MySQL database via the DAO layer. Comments have been condensed to high-level functional or operational summaries of the internal methods.
-
-Flow:
+All old mock-data fallbacks, diagnostic code blocks, and ASCII flow representations have been removed. The servlet executes database lookups strictly through the database access layer (`ProductDAO`).
 
 ```text
-Read uid query parameter
-  -> validate non-empty
-  -> ProductDAO.findByUid(uid) [Production Database Lookup]
-  -> return JSON product or JSON error
+Extract 'uid' Parameter ──► Validate Non-Empty ──► ProductDAO.findByUid(uid) ──► Flush JSON Output
 
 ```
 
-Successful response shape:
+#### API Data Output Examples:
 
+* **Successful Lookups (HTTP 200):**
 ```json
 {
   "uid": "P001",
@@ -117,8 +101,8 @@ Successful response shape:
 
 ```
 
-Error responses are JSON too:
 
+* **Error Handling Exceptions (HTTP 404/500):**
 ```json
 {
   "error": "Product not found: P001"
@@ -126,54 +110,45 @@ Error responses are JSON too:
 
 ```
 
-## CheckoutServlet
 
-Mapping:
 
-```java
-@WebServlet(name = "CheckoutServlet", urlPatterns = "/checkout")
+### 2. `CheckoutServlet` (Transaction Engine)
 
-```
+* **Endpoint Mapping:** `@WebServlet(name = "CheckoutServlet", urlPatterns = "/checkout")`
+* **Target Request:** `POST /billing-system/checkout` (`Content-Type: application/json`)
 
-Request:
+#### Customer Context Capturing:
 
-```text
-POST /billing-system/checkout
-Content-Type: application/json
+The parsing infrastructure handles an optional `customer` block containing `name` and `email` fields passed by the frontend. These elements populate fields inside the `CheckoutPayload` transaction container.
 
-```
-
-### Customer Context Integration
-
-The parsing payload architecture captures an optional `customer` block containing `name` and `email` properties sent by the frontend interface. These inputs populate the extended inner data fields of the `CheckoutPayload` transaction container class.
-
-Checkout follows a strict execution order:
+#### Processing Pipeline Sequence:
 
 ```text
-1. Read incoming JSON body stream
-2. Parse and validate transaction payload (extracting customer data if present)
-3. Save transaction and transaction line items via TransactionDAO
-4. Generate thermal-format receipt PDF in memory
-5. Stream completed PDF bytes directly to the browser
+1. Parse Incoming JSON Stream ──► 2. Validate Payload & Extract Customer Data ──► 
+3. Execute TransactionDAO Batch Save ──► 4. Assemble iText PDF in Memory ──► 5. Stream Bytes to Client
 
 ```
 
-The sequence matters because writing to the response output stream commits the HTTP response channel. Any database transactional failure or structural layout exception must take place prior to streaming so the servlet can accurately return a proper HTTP error status.
+*Sequence Constraint:* The step order is critical. Writing bytes to the network stream commits the HTTP response channel. All database mutations and transaction operations must execute and succeed before the PDF bytes are written, allowing the servlet to safely return error codes if a step fails.
 
-## PDF Generation & Native Printing
+---
 
-The receipt is generated with iText 5 into a `ByteArrayOutputStream`. No temporary files are written to server storage disks.
+## 🖨️ PDF Generation & Native Printing Pipeline
 
-### Layout Controls and Direct Printing
+Invoices are dynamically compiled using **iText 5** straight into an in-memory `ByteArrayOutputStream`. No temporary files are generated on server storage drives.
 
-The layout engine reads the customer configuration from the transaction payload. If customer properties are supplied, they are explicitly rendered into the receipt header space beneath the store information lines:
+### Dynamic Canvas Controls
 
-* **Customer Name:** Printed directly as `"Customer: " + payload.customerName`.
-* **Customer Email:** Printed directly as `"Email: " + payload.customerEmail`.
+* **Flexible Headers:** The rendering engine checks the parsed `CheckoutPayload` for customer details. If present, it maps them cleanly into the receipt header space under the store fields:
+* **Customer Name:** Printed as `"Customer: " + payload.customerName`
+* **Customer Email:** Printed as `"Email: " + payload.customerEmail`
 
-To prevent structural clipping or cut-offs, the vertical canvas layout bounds (`headerHeight`) scale dynamically depending on the presence of these fields.
 
-The application has decommissioned the legacy frontend modal iframe overlay container to facilitate direct, unhindered terminal printing. Response headers route the raw byte stream directly to the client's window framework for immediate native print job management:
+* **Height Scaling:** To eliminate layout clipping or cut-offs on thermal paper styles, the vertical layout boundaries (`headerHeight`) scale dynamically to accommodate these extra entries.
+
+### Zero-Overrun Direct Printing Output
+
+The legacy frontend modal iframe overlay container has been decommissioned to facilitate direct, unhindered terminal printing. Response headers routes raw binary data streams straight into the client window frame for immediate native print job configuration:
 
 ```java
 response.setContentType("application/pdf");
@@ -183,62 +158,62 @@ response.setHeader("Cache-Control", "no-store");
 
 ```
 
-## AppLifecycleListener
+---
 
-Mapping:
+## 🔒 Multi-Threaded Safety Guardrails
+
+Tomcat instantiates **exactly one instance** of each servlet class and shares it across incoming concurrent worker threads. To prevent data corruption or variable intermixing across cashier points, strict thread-safety isolation rules are enforced.
+
+### Thread-Safe Shared Instanced Components:
+
+* **`Gson` Utility Instances:** Safe for shared multi-threaded data marshaling.
+* **DAO Abstractions (`ProductDAO`, `TransactionDAO`):** Completely stateless data access units.
+
+### Unsafe Anti-Patterns Avoided:
 
 ```java
-@WebListener
+// !!! VIOLATION !!! This introduces a shared mutable state across threads.
+private Connection connection; 
 
 ```
 
-Purpose:
+*Rule of Isolation:* Database connections, command statements, and transactional variables are strictly confined within the local scope of individual execution methods (allocated exclusively on the thread's private stack frame) using **try-with-resources** blocks.
 
-* Log web app context startup initialization.
-* Safely close down the open database connection pooling architecture when Tomcat stops or undeploys the app context.
+---
 
-Shutdown calls:
+## ⏳ Application Lifecycle Hooks (`AppLifecycleListener`)
 
+The application context monitoring hook uses the `@WebListener` registration layer to manage server scope boundaries:
+
+* **Initialization:** Logs startup indicators as the application finishes deployment on Tomcat.
+* **Tear-Down Phase:** Triggers on application context shutdowns or WAR updates to systematically release resource handles:
 ```java
 DBConnection.shutdown();
 
 ```
 
-This avoids dangling, stale MySQL connections from squatting and exhausting `max_connections` allocation spaces across server application redeploys. In line with comment cleanups, conversational troubleshooting guides regarding memory leaks have been removed in favor of short, operational descriptions.
 
-## Thread Safety
 
-Tomcat creates exactly one servlet instance and assigns incoming tasks across multiple concurrent request threads. All servlet class-level fields must be strictly thread-safe.
+This hook isolates and cleans database connection pool allocations, preventing dangling connections from exhausting available thread capacity (`max_connections`) across redeployments.
 
-Safe shared fields utilized in this module:
+---
 
-* `Gson` parser instances (safe for concurrent re-use).
-* `ProductDAO` and `TransactionDAO` instances (stateless across requests).
+## 🛠️ Build Verification Command
 
-Unsafe instance patterns to avoid:
-
-```java
-private Connection connection; // UNSAFE — Shared mutable state across threads
-
-```
-
-Database connections must always be isolated inside the request thread scope, borrowed from the resource pool dynamically, and terminated safely through a try-with-resources statement block.
-
-## Build Verification
-
-The project compiles and packages using standard Maven processes:
+To compile, verify, and package the backend archive while actively monitoring for outdated functions, use the production Maven command pipeline:
 
 ```bash
 mvn -Dmaven.compiler.showWarnings=true -Dmaven.compiler.compilerArgs=-Xlint:deprecation clean package
 
 ```
 
-Expected clean build result:
+### Expected Target Result:
 
 ```text
-BUILD SUCCESS
-target/billing-system.war
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Built war: /path/to/project/target/billing-system.war
 
 ```
 
-No automated test blocks are present in the pipeline profile, so Maven will bypass test phases with an empty report indicator.
+The pipeline profile contains no automated unit testing blocks, so Maven will successfully bypass the test cycles and return an empty validation statement.
