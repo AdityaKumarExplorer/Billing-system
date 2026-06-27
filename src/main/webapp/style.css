@@ -594,3 +594,40 @@ body {
     text-shadow: none !important;
   }
 }
+
+/* ─── COMPANY LOGO & SYSTEM ACCENT HALO ─────── */
+.company-logo {
+  background: none;
+  border: 2px solid var(--accent); /* System phosphor green accent ring */
+  padding: 0;
+  margin-left: 10px;
+  cursor: pointer;
+  border-radius: 50%;
+  
+  /* CRITICAL FIX: Forces the container boundary */
+  width: 32px;
+  height: 32px;
+  min-width: 32px;  /* Prevents flexbox compression collapse */
+  min-height: 32px;
+  
+  overflow: hidden; /* Clips anything extending outside the circular ring */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  box-shadow: var(--accent-glow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.company-logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* CRITICAL FIX: Explicitly prevents the raw asset file from breaking boundaries */
+.company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Uniformly scales and downsamples without distorting */
+  display: block;
+}
