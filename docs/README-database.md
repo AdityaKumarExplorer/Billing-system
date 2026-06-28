@@ -52,13 +52,13 @@ Captures high-level operational variables for every processed invoice check.
 | Column | Type | Target Role |
 | --- | --- | --- |
 | `id` | `INT` | Auto-increment Primary Key used as individual transaction references. |
-| `date_time` | `TIMESTAMP` | Exact checkout confirmation moment. |
-| `customer_name` | `VARCHAR(100)` | Captured target identifier (optional customer name). |
-| `customer_email` | `VARCHAR(150)` | Delivery coordinates used by secondary async mailing services. |
-| `subtotal` | `DECIMAL(10,2)` | Consolidated item cost baseline before adding additions or modifiers. |
-| `discount_amount` | `DECIMAL(10,2)` | Total markdown aggregate deducted from the raw base sum. |
-| `tax_amount` | `DECIMAL(10,2)` | Consolidated transactional tax fees derived across specific lines. |
-| `grand_total` | `DECIMAL(10,2)` | Final settlement collection metric representing true checkout value. |
+| `date_time` | `DATETIME` | Exact checkout confirmation moment. |
+| `customer_name` | `VARCHAR(150)` | Captured target identifier (optional customer name). |
+| `customer_email` | `VARCHAR(255)` | Delivery coordinates used by secondary async mailing services. |
+| `subtotal` | `DECIMAL(12,2)` | Consolidated item cost baseline before adding additions or modifiers. |
+| `discount_amount` | `DECIMAL(12,2)` | Total markdown aggregate deducted from the raw base sum. |
+| `tax_amount` | `DECIMAL(12,2)` | Consolidated transactional tax fees derived across specific lines. |
+| `grand_total` | `DECIMAL(12,2)` | Final settlement collection metric representing true checkout value. |
 
 ### 3. `transaction_items` (Invoice Line Elements)
 
@@ -66,6 +66,7 @@ Maps explicit quantity line items bound across individual receipt records.
 
 | Column | Type | Target Role |
 | --- | --- | --- |
+| `id` | `INT` | Auto-increment Primary Key for the line item entry. |
 | `transaction_id` | `INT` | Foreign Key reference linking back to `transactions.id`. |
 | `product_uid` | `VARCHAR(20)` | Tracking SKU representing the base item state. |
 | `product_name` | `VARCHAR(150)` | **Snapshot Field:** Retains item name at the exact point of purchase. |
@@ -97,7 +98,7 @@ CREATE INDEX idx_items_product ON transaction_items(product_uid);
 
 ---
 
-## ⚙️ Resource Pool Configuration (`db.properties`)
+## ⚙️ Resource Pool & SMTP Configuration (`db.properties`)
 
 Properties are loaded directly out of the application classpath framework using a dedicated un-tracked environment file format:
 
@@ -111,6 +112,10 @@ pool.maxTotal=10
 pool.minIdle=2
 pool.maxWaitMillis=5000
 
+mail.smtp.host=smtp.gmail.com
+mail.smtp.port=587
+mail.sender.email=your_sender_email_here
+mail.sender.password=your_app_password_here
 ```
 
 *Security Guidelines:* Production infrastructure credentials should never be committed into public code repositories. Maintain this template configuration layer for local staging environments or use CI/CD runners to substitute production-ready credentials upon compilation tasks.
