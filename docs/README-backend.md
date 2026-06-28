@@ -7,8 +7,9 @@ This module manages the business logic, transaction workflows, dynamic iText PDF
 ## 🏗️ Files & Directory Overview
 
 - `src/main/java/backend/ProductServlet.java` — Catalogs product barcodes/UID scans.
-- `src/main/java/backend/CheckoutServlet.java` — Coordinates atomic saves and returns the generated PDF stream.
-- `src/main/java/backend/AppLifecycleListener.java` — Context listener running resource tear-downs.
+- `src/main/java/backend/CheckoutServlet.java` — Coordinates atomic saves, triggers receipt emails, and returns the generated PDF stream.
+- `src/main/java/backend/EmailService.java` — Handles asynchronous dispatch of PDF receipts via SMTP configurations.
+- `src/main/java/backend/AppLifecycleListener.java` — Context listener running resource connection pool tear-downs.
 - `src/main/webapp/WEB-INF/web.xml` — Deployment descriptor configuration sheet.
 
 ---
@@ -27,6 +28,23 @@ The project targets modern enterprise execution platforms:
     <artifactId>jakarta.servlet-api</artifactId>
     <version>6.1.0</version>
     <scope>provided</scope>
+</dependency>
+<dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>itext-core</artifactId>
+    <version>9.0.0</version>
+    <type>pom</type>
+</dependency>
+<dependency>
+    <groupId>jakarta.mail</groupId>
+    <artifactId>jakarta.mail-api</artifactId>
+    <version>2.1.3</version>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.angus</groupId>
+    <artifactId>jakarta.mail</artifactId>
+    <version>2.0.3</version>
+    <scope>runtime</scope>
 </dependency>
 
 ```
@@ -65,7 +83,7 @@ The web deployment descriptor is explicitly aligned with the Servlet 6.1 validat
 ### Configuration Highlights:
 
 * **Welcome File:** Registers `index.html` as the default application root dashboard landing page.
-* **Session Management:** Enforces a 30-minute absolute session timeout limit.
+* **Session Management:** Enforces a 10-minute absolute session timeout limit.
 * **Error Mapping:** Provides structural fallback error page routings for `404 (Not Found)` and `500 (Internal Server Error)` states.
 
 *Operational Note:* In alignment with code maintenance standards, all informational notes and text charts have been stripped from `web.xml`. All servlet route endpoints are declared cleanly using `@WebServlet` annotations inside the respective Java source files rather than here.
@@ -125,17 +143,29 @@ The parsing infrastructure handles an optional `customer` block containing `name
 
 ```text
 1. Parse Incoming JSON Stream ──► 2. Validate Payload & Extract Customer Data ──► 
-3. Execute TransactionDAO Batch Save ──► 4. Assemble iText PDF in Memory ──► 5. Stream Bytes to Client
-
+3. Execute TransactionDAO Batch Save ──► 4. Assemble iText PDF in Memory ──► 
+5. Dispatch Async Receipt Email (if email provided) ──► 6. Stream Bytes to Client
 ```
 
 *Sequence Constraint:* The step order is critical. Writing bytes to the network stream commits the HTTP response channel. All database mutations and transaction operations must execute and succeed before the PDF bytes are written, allowing the servlet to safely return error codes if a step fails.
+
+### 3. `EmailService` (Asynchronous Notification Dispatcher)
+
+* **Role:** Dispatches digital receipt notifications in the background to avoid blocking the main servlet execution thread.
+* **Trigger Conditions:** Activated within `CheckoutServlet` post-checkout when the customer's email address is non-blank and configuration credentials exist in `db.properties`.
+
+#### Execution Pipeline:
+
+1. **Retrieve Configurations:** Reads SMTP configurations (`mail.smtp.host`, `mail.smtp.port`, `mail.sender.email`, `mail.sender.password`) from `db.properties`.
+2. **Spawn Worker Thread:** Spawns a new background execution thread (`new Thread(...)`) to handle SMTP handshakes asynchronously.
+3. **Assemble Multipart Message:** Integrates a localized welcome message in the body part and packages the compiled PDF receipt as a binary attachment.
+4. **Dispatch:** Streams the SMTP transport transaction using standard Secure Connection protocols (STARTTLS).
 
 ---
 
 ## 🖨️ PDF Generation & Native Printing Pipeline
 
-Invoices are dynamically compiled using **iText 5** straight into an in-memory `ByteArrayOutputStream`. No temporary files are generated on server storage drives.
+Invoices are dynamically compiled using **iText 9** straight into an in-memory `ByteArrayOutputStream`. No temporary files are generated on server storage drives.
 
 ### Dynamic Canvas Controls
 
@@ -146,14 +176,12 @@ Invoices are dynamically compiled using **iText 5** straight into an in-memory `
 
 * **Height Scaling:** To eliminate layout clipping or cut-offs on thermal paper styles, the vertical layout boundaries (`headerHeight`) scale dynamically to accommodate these extra entries.
 
-### Zero-Overrun Direct Printing Output
-
-The legacy frontend modal iframe overlay container has been decommissioned to facilitate direct, unhindered terminal printing. Response headers routes raw binary data streams straight into the client window frame for immediate native print job configuration:
+The response headers route raw binary data streams straight to the client window for download/display:
 
 ```java
 response.setContentType("application/pdf");
 response.setContentLength(pdfBytes.length);
-response.setHeader("Content-Disposition", "inline; filename=\"receipt.pdf\"");
+response.setHeader("Content-Disposition", "inline; filename=\"" + uniqueReceiptName + "\"");
 response.setHeader("Cache-Control", "no-store");
 
 ```
