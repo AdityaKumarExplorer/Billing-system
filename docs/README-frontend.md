@@ -9,6 +9,8 @@ This module comprises the user-facing interface for the point-of-sale terminal d
 - `src/main/webapp/index.html` — Document structural blueprint using structural semantic wrappers.
 - `src/main/webapp/style.css` — High-contrast dark industrial-themed user interface stylesheets.
 - `src/main/webapp/script.js` — Client runtime engine handling calculations, memory tracking, and network APIs.
+- `src/main/webapp/logo.png` — Visual logo asset displayed in the terminal dashboard topbar.
+- `src/main/webapp/payment.html` — Static loading page mock for payment gateway redirect transitions.
 
 ---
 
@@ -18,10 +20,9 @@ The application is wired by default to integrate smoothly with the live enterpri
 
 ```javascript
 const CONFIG = {
-  MOCK_MODE: false,
   GET_PRODUCT_URL: "get-product",
   CHECKOUT_URL: "checkout",
-  CURRENCY: "\u20b9", // Unicode literal encoding for the Rupee Symbol (₹)
+  CURRENCY: "₹",
 };
 
 ```
@@ -33,14 +34,7 @@ The API endpoint parameters (`GET_PRODUCT_URL`, `CHECKOUT_URL`) are purposefully
 * `fetch("get-product")` resolves seamlessly to: `http://localhost:8080/billing-system/get-product`
 * `fetch("checkout")` resolves seamlessly to: `http://localhost:8080/billing-system/checkout`
 
-### Standalone Local Mock Routing
 
-For local isolated sandbox prototyping without active Tomcat containers or backing database networks, toggle the operational state modifier to `MOCK_MODE: true`.
-
-* **Scan Inquiries:** Resolves product arrays directly out of a localized, static dictionary tracking mock entries: `P001`, `P002`, `P003`, `P004`, `P005`, `P006`.
-* **Checkout Operations:** Bypasses web socket generation entirely, verifying data integrity shapes directly into the developer console rather than triggering PDF stream pipelines.
-
----
 
 ## 🧠 Vanilla State Engine Architecture
 
@@ -89,7 +83,7 @@ When a checkout transaction successfully resolves validation metrics, the fronte
     "email": "aditya@example.com"
   },
   "subtotal": 900.0,
-  "discountAmount": 0.0,
+  "discount": 0.0,
   "taxAmount": 45.0,
   "grandTotal": 945.0,
   "items": [
@@ -110,23 +104,15 @@ When a checkout transaction successfully resolves validation metrics, the fronte
 
 ---
 
-## 🖨️ PDF Ingestion & Native Print Routines
+## 💳 Checkout Completion & Printing
 
-When running with the live backend, successful transactions return an un-tracked, binary `application/pdf` stream directly from the `CheckoutServlet`.
+Upon successful checkout, the frontend clears the cart and redirects the browser session to a transitional loading state page.
 
-### Stream-to-Hardware Ingestion Pattern
+### Workflow Sequence
 
-1. **Blob Conversion:** The raw HTTP stream response is instantly converted into an immutable binary browser asset layout structure.
-2. **Dynamic Handle Generation:** The application constructs a temporary resource path link bound directly to local browser threads:
-```javascript
-const pdfBlob = await response.blob();
-const blobUrl = URL.createObjectURL(pdfBlob);
-
-```
-
-
-3. **Direct Print Invocation:** Decommissioning legacy overlay dependencies, the file references are assigned directly to background execution frames. The terminal triggers hardware printing loops immediately via `.contentWindow.print()` hooks to feed terminal point-of-sale receipt slips.
-4. **Memory Optimization:** Upon receipt completion or frame target termination, the temporary reference handles are instantly destroyed using native garbage disposal methods (`URL.revokeObjectURL(blobUrl)`) to prevent client-side memory exhaustion.
+1. **Submit Payload:** The frontend bundles customer context and purchase items, posting them to the `/checkout` servlet as a JSON request.
+2. **Clear & Redirect:** If the servlet responds with HTTP 200 (indicating database transaction success and receipt compilation), the client calls `clearCart()`, resets the customer input fields, and navigates to `payment.html` via `window.location.href = "payment.html"`.
+3. **Standard Printing:** A "Print Receipt" button in the sidebar panel (`#js-print-receipt-btn`) is enabled whenever items exist in the cart, allowing the cashier to print the current screen layout using the browser's native `window.print()` functionality.
 
 ---
 
@@ -149,4 +135,3 @@ The system uses standard tracking IDs to map interactive operations safely witho
 | `uid-input` | Captures raw scan signals from connected hardware scanners or barcode registers. |
 | `js-cart-body` | Structural table zone used to clear and inject active receipt items. |
 | `js-checkout-btn` | Intercepts confirmation signals to lock input screens and stream JSON outputs. |
-| `js-receipt-frame` | Isolated container handling raw PDF bytes for local system spooling. |
